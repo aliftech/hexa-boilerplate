@@ -5,6 +5,7 @@ import (
 	"hexa-fiber-gorm/internal/core"
 	"hexa-fiber-gorm/internal/modules/user/adapter/persistence"
 	"hexa-fiber-gorm/internal/modules/user/adapter/web"
+	"hexa-fiber-gorm/internal/modules/user/usecase"
 	"hexa-fiber-gorm/pkg/db"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,16 +17,20 @@ type userModule struct {
 
 func (m *userModule) RegisterRoutes(app *fiber.App) {
 	repo := persistence.NewUserRepository(m.dbConn)
-	handler := web.NewHandler(repo)
-	web.RegisterUserRoutes(app, handler) // ← use new route register
+
+	// ✅ Build usecase from repo
+	usecase := usecase.NewUserUsecase(repo) // returns port.UserUsecase
+
+	// ✅ Pass usecase to handler
+	handler := web.NewHandler(usecase) // handler expects UserUsecase
+
+	web.RegisterUserRoutes(app, handler)
 }
 
-// Factory function
 func newUserModule(dbConn *db.Connection) core.Module {
 	return &userModule{dbConn: dbConn}
 }
 
-// Auto-register
 func init() {
 	factory.RegisterModule(func(dbConn *db.Connection) core.Module {
 		return newUserModule(dbConn)

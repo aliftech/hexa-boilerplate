@@ -1,50 +1,48 @@
-// internal/modules/user/adapter/web/handler.go
 package web
 
 import (
-	"hexa-fiber-gorm/internal/modules/user/domain"
+	"hexa-fiber-gorm/internal/modules/user/adapter/web/dto"
 	ports "hexa-fiber-gorm/internal/modules/user/port"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type Handler struct {
-	repo ports.UserRepository
+	usecase ports.UserUsecase // ✅ depends on USECASE, not repo
 }
 
-func NewHandler(repo ports.UserRepository) *Handler {
-	return &Handler{repo: repo}
+func NewHandler(usecase ports.UserUsecase) *Handler {
+	return &Handler{usecase: usecase}
 }
 
-// CreateUser handles the HTTP request to create a user
 func (h *Handler) CreateUser(c *fiber.Ctx) error {
-	user := new(domain.User)
-	if err := c.BodyParser(user); err != nil {
+	req := new(dto.CreateUserRequest)
+	if err := c.BodyParser(req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid payload"})
 	}
-	if err := h.repo.Create(user); err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "failed to create user"})
+
+	user, err := h.usecase.CreateUser(req.Name, req.Email)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
+
 	return c.Status(201).JSON(user)
 }
 
-// GetUser handles fetching a user by ID
 func (h *Handler) GetUser(c *fiber.Ctx) error {
 	// id := c.Params("id")
-	// TODO: parse id to uint (use strconv)
-	// For now, simplified
-	user, err := h.repo.FindByID(1)
+	// TODO: parse id to uint
+	user, err := h.usecase.GetUserByID(1)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "user not found"})
 	}
 	return c.JSON(user)
 }
 
-// GetAllUsers returns all users
 func (h *Handler) GetAllUsers(c *fiber.Ctx) error {
-	users, err := h.repo.FindAll()
+	users, err := h.usecase.GetAllUsers()
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "database error"})
+		return c.Status(500).JSON(fiber.Map{"error": "failed to fetch users"})
 	}
 	return c.JSON(users)
 }

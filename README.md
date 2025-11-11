@@ -3,41 +3,47 @@ hexa-fiber-gorm/
 ├── cmd/
 │   └── app/
 │       └── main.go
+│
 ├── internal/
 │   ├── app/
 │   │   └── factory/
-│   │       └── factory.go                 # Module registry & builder
+│   │       └── factory.go
 │   │
 │   ├── core/
-│   │   └── module.go                      # Module interface (RegisterRoutes)
+│   │   └── module.go
 │   │
 │   └── modules/
-│       └── user/                          # Each feature = self-contained module
+│       └── user/
 │           ├── domain/
-│           │   └── user.go                # Pure domain entity
+│           │   └── user.go                # Entity
 │           │
-│           ├── port/                      # "Ports" = interfaces (contracts)
-│           │   └── repository.go          # e.g., UserRepository
+│           ├── port/                      # Interfaces (Ports)
+│           │   ├── repository.go          # e.g., UserRepository
+│           │   └── usecase.go             # e.g., UserUsecase
+│           │
+│           ├── usecase/                   # ← BUSINESS LOGIC HERE
+│           │   └── user_usecase.go        # Implements UserUsecase port
 │           │
 │           └── adapter/
 │               ├── persistence/
-│               │   └── user_repository.go # GORM implementation
+│               │   └── user_repository.go # Implements UserRepository
 │               │
 │               └── web/
-│                   ├── handler.go         # HTTP handler logic
-│                   ├── routes.go          # Route registration only
-│                   └── create_user_dto.go # (Optional) Request DTOs
+│                   ├── handler.go         # ONLY calls usecase
+│                   ├── routes.go          # Route registration
+│                   └── dto/               # (Optional) Request/Response DTOs
+│                       ├── create_user_request.go
+│                       └── user_response.go
 │
-│           └── bootstrap.go               # Self-registers module in factory
+│           └── bootstrap.go               # Wires deps & registers module
 │
 ├── pkg/
 │   └── db/
-│       └── db.go                          # Shared DB connection (GORM)
+│       └── db.go
 │
-├── .env                                   # Environment variables
+├── .env
 ├── Makefile
-├── go.mod
-└── go.sum
+└── go.mod
 ```
 
 - ✅ **internal/modules/** → Each feature (user, auth, session) is a self-contained module.
