@@ -5,22 +5,26 @@ import (
 
 	"hexa-fiber-gorm/internal/app/factory"
 	"hexa-fiber-gorm/internal/config"
+	"hexa-fiber-gorm/internal/i18n"
+	"hexa-fiber-gorm/internal/middleware"
 	"hexa-fiber-gorm/pkg/db"
 
-	// 🔌 Force-load all modules (triggers init → auto-registration)
 	_ "hexa-fiber-gorm/internal/modules/user"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
-	// 1. Load config
+	// Load locales
+	i18n.LoadLocales("locales")
+
+	// Load config
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal("❌ Failed to load config:", err)
 	}
 
-	// 2. Initialize DB (infrastructure)
+	// Initialize DB
 	gormDB, err := db.New(&db.DBConfig{
 		Host:            cfg.DB.Host,
 		Port:            cfg.DB.Port,
@@ -38,10 +42,20 @@ func main() {
 	}
 	defer gormDB.Close()
 
-	// 3. Start app
+	// Setup Fiber
 	app := fiber.New()
+
+	// Middleware
+	app.Use(middleware.NewCORSMiddleware())
+
+	// Register modules
+	_ = "hexa-fiber-gorm/internal/modules/user" // force import
 	factory.BuildModules(gormDB).RegisterRoutes(app)
 
-	log.Printf("🚀 Server running on http://localhost:%s (env: %s)", cfg.Server.Port, cfg.Server.Env)
-	log.Fatal(app.Listen(":" + cfg.Server.Port))
+	port := cfg.Server.Port
+	if port == "" {
+		port = "3000"
+	}
+	log.Printf("🚀 Server running on http://localhost:%s (env: %s)", port, cfg.Server.Env)
+	log.Fatal(app.Listen(":" + port))
 }

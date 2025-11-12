@@ -1,0 +1,16 @@
+[http]
+  created = "Sumber daya berhasil dibuat"
+  updated = "Sumber daya berhasil diperbarui"
+  deleted = "Sumber daya berhasil dihapus"
+  not_found = "Sumber daya tidak ditemukan"
+  bad_request = "Permintaan tidak valid"
+  internal_error = "Terjadi kesalahan"
+
+[auth]
+  login_success = "Login berhasil"
+  invalid_credentials = "Email atau kata sandi salah"
+
+[user]
+  created = "Pengguna berhasil dibuat"
+  email_exists = "Email sudah terdaftar"
+  not_found = "Pengguna tidak ditemukan"

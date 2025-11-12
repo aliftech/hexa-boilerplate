@@ -1,0 +1,16 @@
+[http]
+  created = "Resource created successfully"
+  updated = "Resource updated successfully"
+  deleted = "Resource deleted successfully"
+  not_found = "Resource not found"
+  bad_request = "Invalid request"
+  internal_error = "Something went wrong"
+
+[auth]
+  login_success = "Login successful"
+  invalid_credentials = "Invalid email or password"
+
+[user]
+  created = "User created successfully"
+  email_exists = "Email already exists"
+  not_found = "User not found"
