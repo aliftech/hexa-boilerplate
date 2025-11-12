@@ -1,6 +1,6 @@
 .PHONY: run setup help migrate
 
-# Load .env if it exists (silent if missing)
+# Load .env if it exists
 -include .env
 
 # --- Main Targets ---
@@ -16,19 +16,17 @@ help:
 	@echo "  make run                 - Run the application"
 	@echo "  make setup               - Install Go dependencies"
 	@echo ""
-	@echo "  make migrate new NAME=xxx  - Create a new SQL migration (e.g., make migrate new NAME=create_users_table)"
-	@echo "  make migrate up          - Apply all pending migrations"
-	@echo "  make migrate down        - Rollback the last migration"
-	@echo "  make migrate reset       - Rollback all migrations, then re-apply them"
+	@echo "  make migrate-new NAME=xxx  - Create new migration (e.g., make migrate-new NAME=create_users_table)"
+	@echo "  make migrate-up            - Apply all pending migrations"
+	@echo "  make migrate-down          - Rollback last migration"
+	@echo "  make migrate-reset         - Reset: down then up"
 	@echo ""
-	@echo "💡 Tip: Ensure 'migrate' CLI is installed (https://github.com/golang-migrate/migrate)"
+	@echo "💡 Tip: Install 'migrate' CLI: go install -tags 'mysql' github.com/golang-migrate/migrate/v4/cmd/migrate@latest"
 
-# --- Migration Subcommands ---
-migrate:  ## Delegate to subcommands (for help clarity)
-
+# --- Migrations ---
 migrate-new:
 ifndef NAME
-	$(error Please provide NAME, e.g., make migrate new NAME=create_users_table)
+	$(error Please specify NAME, e.g., make migrate-new NAME=create_users_table)
 endif
 	migrate create -ext sql -dir migrations -seq $(NAME)
 
@@ -39,16 +37,6 @@ migrate-down:
 	migrate -path ./migrations -database "$(DB_URL)" -verbose down
 
 migrate-reset:
-	@echo "🔄 Resetting database migrations..."
+	@echo "🔄 Resetting migrations..."
 	make migrate-down
 	make migrate-up
-
-# --- Alias-style routing (migrate new → migrate-new) ---
-migrate new: migrate-new
-migrate up: migrate-up
-migrate down: migrate-down
-migrate reset: migrate-reset
-
-# Prevent direct calls to internal targets
-migrate-new migrate-up migrate-down migrate-reset:
-	@true
