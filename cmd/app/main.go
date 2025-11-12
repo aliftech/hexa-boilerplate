@@ -1,4 +1,3 @@
-// cmd/app/main.go
 package main
 
 import (
@@ -7,6 +6,9 @@ import (
 	"hexa-fiber-gorm/internal/app/factory"
 	"hexa-fiber-gorm/internal/config"
 	"hexa-fiber-gorm/pkg/db"
+
+	// 🔌 Force-load all modules (triggers init → auto-registration)
+	_ "hexa-fiber-gorm/internal/modules/user"
 
 	"github.com/gofiber/fiber/v2"
 )
