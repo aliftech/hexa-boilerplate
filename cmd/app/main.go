@@ -1,34 +1,45 @@
+// cmd/app/main.go
 package main
 
 import (
 	"log"
-	"os"
 
 	"hexa-fiber-gorm/internal/app/factory"
+	"hexa-fiber-gorm/internal/config"
 	"hexa-fiber-gorm/pkg/db"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	_ = godotenv.Load()
+	// 1. Load config
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal("❌ Failed to load config:", err)
+	}
 
-	dbConn := db.NewConnection()
+	// 2. Initialize DB (infrastructure)
+	gormDB, err := db.New(&db.DBConfig{
+		Host:            cfg.DB.Host,
+		Port:            cfg.DB.Port,
+		User:            cfg.DB.User,
+		Password:        cfg.DB.Password,
+		DBName:          cfg.DB.DBName,
+		TimeZone:        cfg.DB.TimeZone,
+		MaxOpenConns:    cfg.DB.MaxOpenConns,
+		MaxIdleConns:    cfg.DB.MaxIdleConns,
+		ConnMaxLifetime: cfg.DB.ConnMaxLifetime,
+		Env:             cfg.DB.Env,
+	})
+	if err != nil {
+		log.Fatal("❌ Database init failed:", err)
+	}
+	defer gormDB.Close()
 
+	// 3. Start app
 	app := fiber.New()
+	factory.BuildModules(gormDB).RegisterRoutes(app)
 
-	// Bootstrap all modules
-	modules := factory.BuildModules(dbConn)
-	for _, m := range modules {
-		m.RegisterRoutes(app)
-	}
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3000"
-	}
-
-	log.Printf("🚀 Server running on http://localhost:%s", port)
-	log.Fatal(app.Listen(":" + port))
+	log.Printf("🚀 Server running on http://localhost:%s (env: %s)", cfg.Server.Port, cfg.Server.Env)
+	log.Fatal(app.Listen(":" + cfg.Server.Port))
 }

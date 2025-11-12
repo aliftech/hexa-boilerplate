@@ -11,28 +11,26 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// userModule implements core.Module
 type userModule struct {
-	dbConn *db.Connection
+	db *db.GORM
 }
 
 func (m *userModule) RegisterRoutes(app *fiber.App) {
-	repo := persistence.NewUserRepository(m.dbConn)
-
-	// ✅ Build usecase from repo
-	usecase := usecase.NewUserUsecase(repo) // returns port.UserUsecase
-
-	// ✅ Pass usecase to handler
-	handler := web.NewHandler(usecase) // handler expects UserUsecase
+	// Build dependency chain: repo → usecase → handler
+	repo := persistence.NewUserRepository(m.db)
+	usecase := usecase.NewUserUsecase(repo)
+	handler := web.NewHandler(usecase)
 
 	web.RegisterUserRoutes(app, handler)
 }
 
-func newUserModule(dbConn *db.Connection) core.Module {
-	return &userModule{dbConn: dbConn}
+// Factory function
+func newUserModule(db *db.GORM) core.Module {
+	return &userModule{db: db}
 }
 
+// Auto-register this module on package init
 func init() {
-	factory.RegisterModule(func(dbConn *db.Connection) core.Module {
-		return newUserModule(dbConn)
-	})
+	factory.RegisterModule(newUserModule)
 }

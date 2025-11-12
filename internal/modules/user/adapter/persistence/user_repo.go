@@ -12,8 +12,8 @@ type userRepository struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(dbConn *db.Connection) ports.UserRepository {
-	return &userRepository{db: dbConn.DB}
+func NewUserRepository(gormDB *db.GORM) ports.UserRepository {
+	return &userRepository{db: gormDB.DB()}
 }
 
 func (r *userRepository) Create(u *domain.User) error {
