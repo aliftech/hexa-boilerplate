@@ -1,3 +1,4 @@
+// Package db provides MySQL database connection using GORM.
 package db
 
 import (
@@ -9,39 +10,45 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// DBConfig matches internal/config.DBConfig (or embed it)
+// DBConfig holds MySQL connection settings.
 type DBConfig struct {
 	Host            string
 	Port            int
 	User            string
 	Password        string
 	DBName          string
-	TimeZone        string
+	TimeZone        string // e.g., "Local" or "Asia%2FJakarta"
 	MaxOpenConns    int
 	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
-	Env             string
+	Env             string // "development", "staging", "production"
 }
 
+// DSN returns the MySQL Data Source Name string.
 func (c *DBConfig) DSN() string {
 	return fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=%s",
-		c.User, c.Password, c.Host, c.Port, c.DBName, c.TimeZone,
+		c.User,
+		c.Password,
+		c.Host,
+		c.Port,
+		c.DBName,
+		c.TimeZone,
 	)
 }
 
+// GORM wraps the GORM database connection.
 type GORM struct {
 	db *gorm.DB
 }
 
-// New accepts *DBConfig from internal/config
+// New creates and returns a new MySQL database connection using GORM.
 func New(config *DBConfig) (*GORM, error) {
-	// ... (rest unchanged)
 	var logLevel logger.LogLevel
 	switch config.Env {
 	case "development", "staging":
 		logLevel = logger.Info
-	default:
+	default: // production or unknown
 		logLevel = logger.Error
 	}
 
@@ -56,12 +63,15 @@ func New(config *DBConfig) (*GORM, error) {
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get SQL DB: %w", err)
-	}
-	if err := sqlDB.Ping(); err != nil {
-		return nil, fmt.Errorf("MySQL unreachable: %w", err)
+		return nil, fmt.Errorf("failed to get underlying SQL DB: %w", err)
 	}
 
+	// Test the connection
+	if err := sqlDB.Ping(); err != nil {
+		return nil, fmt.Errorf("MySQL server is unreachable: %w", err)
+	}
+
+	// Configure connection pool
 	if config.MaxOpenConns > 0 {
 		sqlDB.SetMaxOpenConns(config.MaxOpenConns)
 	}
@@ -75,8 +85,16 @@ func New(config *DBConfig) (*GORM, error) {
 	return &GORM{db: db}, nil
 }
 
-func (g *GORM) DB() *gorm.DB { return g.db }
+// DB returns the underlying *gorm.DB instance.
+func (g *GORM) DB() *gorm.DB {
+	return g.db
+}
+
+// Close closes the database connection.
 func (g *GORM) Close() error {
-	sqlDB, _ := g.db.DB()
+	sqlDB, err := g.db.DB()
+	if err != nil {
+		return err
+	}
 	return sqlDB.Close()
 }
